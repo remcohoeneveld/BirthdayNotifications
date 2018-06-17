@@ -84,6 +84,15 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         });
 
 
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            String registerSuccessMessage = extras.getString("registerSuccessMessage");
+
+            if (!registerSuccessMessage.isEmpty()) {
+                Toast.makeText(getApplicationContext(), registerSuccessMessage, Toast.LENGTH_SHORT).show();
+            }
+        }
+
         Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -166,6 +175,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                             } else {
                                 // If sign in fails, display a message to the user.
                                 Toast.makeText(getApplicationContext(), "Authentication failed.", Toast.LENGTH_SHORT).show();
+                                showProgress(false);
                             }
                         }
                     });

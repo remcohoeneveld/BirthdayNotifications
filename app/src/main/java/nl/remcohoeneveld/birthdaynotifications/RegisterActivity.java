@@ -153,10 +153,13 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
                         public void onComplete(@NonNull Task<AuthResult> task) {
                             if (task.isSuccessful()) {
                                 // Register success, send message to user
-                                Toast.makeText(getApplicationContext(),"User Registered please now sign in", Toast.LENGTH_LONG).show();
+                                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                                intent.putExtra("registerSuccessMessage","Register completed successfully you can now login!");
+                                startActivity(intent);
                             } else {
                                 // Register failure, send message to user
                                 Toast.makeText(getApplicationContext(), "Authentication failed.", Toast.LENGTH_SHORT).show();
+                                showProgress(false);
                             }
                         }
                     });
