@@ -3,13 +3,19 @@ package nl.remcohoeneveld.birthdaynotifications;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -21,6 +27,8 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "ERROR: ";
+    private DatabaseReference myRef;
+    private EditText mMessageView;
     NotificationCompat.Builder notification;
 
     @Override
@@ -34,13 +42,50 @@ public class MainActivity extends AppCompatActivity {
 
         // Write a message to the database
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference("message");
+        myRef = database.getReference("message");
 
-        // setting the firebase value text
-        myRef.setValue("Wish Remco a Happy birthday!");
+        mMessageView = findViewById(R.id.text_message);
 
 
-        // Read from the database
+        Button mMessageButton = (Button) findViewById(R.id.send_message_button);
+        mMessageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendMessage();
+            }
+        });
+
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            // Name, email address, and profile photo Url
+            String name = user.getDisplayName();
+            String email = user.getEmail();
+            Uri photoUrl = user.getPhotoUrl();
+
+            // Check if user's email is verified
+            boolean emailVerified = user.isEmailVerified();
+
+            // The user's ID, unique to the Firebase project. Do NOT use this value to
+            // authenticate with your backend server, if you have one. Use
+            // FirebaseUser.getToken() instead.
+            String uid = user.getUid();
+
+
+            Log.v(TAG, "name=" + name);
+            Log.v(TAG, "email=" + email);
+            Log.v(TAG, "photoUrl=" + photoUrl);
+            Log.v(TAG, "emailVerified=" + emailVerified);
+
+            Toast.makeText(getApplicationContext(), "You signed in as " + email, Toast.LENGTH_SHORT).show();
+
+        } else {
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+        }
+
+
+        // Read from the databasejan@gmail.c
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -56,8 +101,6 @@ public class MainActivity extends AppCompatActivity {
                 // adding the value to the text
                 text.setText(value);
 
-                // Calling the sendNotification function to send a notification with the value
-                sendNotification(value, System.currentTimeMillis());
             }
 
             @Override
@@ -66,6 +109,20 @@ public class MainActivity extends AppCompatActivity {
                 Log.w(TAG, "Failed to read value.", error.toException());
             }
         });
+    }
+
+    private void sendMessage() {
+        String message = mMessageView.getText().toString().trim();
+
+        if (!message.isEmpty()){
+            myRef.setValue(message);
+
+            // Calling the sendNotification function to send a notification with the value
+            sendNotification(message, System.currentTimeMillis());
+        } else {
+            mMessageView.setError("Message is required");
+            mMessageView.requestFocus();
+        }
     }
 
     public void sendNotification(String value, Long time){
