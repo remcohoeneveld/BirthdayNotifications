@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -63,29 +64,68 @@ public class AddBirthdayActivity extends AppCompatActivity {
             mMessageButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (user != null) {
-                        String uid = user.getUid();
-                        String email = user.getEmail();
-
-                        myRef = database.getReference("users/" + uid);
-                        String key = myRef.push().getKey();
-
-                        String fullName = mFullnameView.getText().toString();
-                        String nickname = mNicknameView.getText().toString();
-                        Date birthDay = new Date(mBirthdayView.getText().toString());
-
-                        writeUserData(uid, key, fullName, nickname, birthDay);
-
-                    } else {
-                        Intent intent = new Intent(AddBirthdayActivity.this, MainActivity.class);
-                        startActivity(intent);
-                    }
+                    userData();
                 }
             });
 
         } else {
             Intent intent = new Intent(AddBirthdayActivity.this, LoginActivity.class);
             startActivity(intent);
+        }
+    }
+
+    private void userData() {
+        if (NetworkHelper.initializeNetworkHelper(this)) {
+            if (user != null) {
+                // Reset errors.
+                mFullnameView.setError(null);
+                mNicknameView.setError(null);
+                mBirthdayView.setError(null);
+
+                //get the firebase data
+                String uid = user.getUid();
+                myRef = database.getReference("users/" + uid);
+                String key = myRef.push().getKey();
+
+                // the fullname nickname and birthday
+                String fullName = mFullnameView.getText().toString();
+                String nickname = mNicknameView.getText().toString();
+                Date birthDay = new Date(mBirthdayView.getText().toString());
+
+                boolean cancel = false;
+                View focusView = null;
+
+                // Check for a valid password, if the user entered one.
+                if (TextUtils.isEmpty(fullName)) {
+                    mFullnameView.setError(getString(R.string.error_invalid_name));
+                    focusView = mFullnameView;
+                    cancel = true;
+                }
+
+                // Check for a valid email address.
+                if (TextUtils.isEmpty(nickname)) {
+                    mNicknameView.setError(getString(R.string.error_invalid_name));
+                    focusView = mNicknameView;
+                    cancel = true;
+                }
+
+                // Check for a valid email address.
+                if (TextUtils.isEmpty(birthDay.toString())) {
+                    mBirthdayView.setError(getString(R.string.error_invalid_date));
+                    focusView = mBirthdayView;
+                    cancel = true;
+                }
+
+                if (cancel) {
+                    // There was an error; don't attempt login and focus the first
+                    // form field with an error.
+                    focusView.requestFocus();
+                } else {
+                    writeUserData(uid, key, fullName, nickname, birthDay);
+                }
+            } else {
+                finish();
+            }
         }
     }
 

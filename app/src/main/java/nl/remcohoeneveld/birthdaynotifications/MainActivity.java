@@ -16,6 +16,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -74,6 +76,10 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.action_settings) {
             return true;
         }
+        if (id == R.id.action_log_out) {
+            FirebaseAuth.getInstance().signOut();
+            finish();
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -106,7 +112,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
-            String addSuccessMessage = data.getStringExtra("remaddSuccessMessage");
+            String addSuccessMessage = data.getStringExtra("addSuccessMessage");
 
             if (addSuccessMessage != null) {
                 Toast.makeText(getApplicationContext(), addSuccessMessage, Toast.LENGTH_SHORT).show();

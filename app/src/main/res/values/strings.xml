@@ -40,4 +40,8 @@
     <string name="action_add_birthday">add birthday</string>
     <string name="add_success_message">Birthday successfully added</string>
     <string name="add_error_message">something went wrong please try again</string>
+    <string name="action_sign_off">sign off</string>
+    <string name="action_log_out">logout</string>
+    <string name="error_invalid_name">please type a correct name</string>
+    <string name="error_invalid_date">please fill in a date</string>
 </resources>

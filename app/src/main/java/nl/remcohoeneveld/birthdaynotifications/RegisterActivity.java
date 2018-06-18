@@ -3,6 +3,7 @@ package nl.remcohoeneveld.birthdaynotifications;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
@@ -153,10 +154,10 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 if (task.isSuccessful()) {
-                                    // Register success, send message to user
-                                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                                    intent.putExtra("registerSuccessMessage", getString(R.string.success_register));
-                                    startActivity(intent);
+                                    setResult(Activity.RESULT_OK,
+                                            new Intent().putExtra("registrySuccessMessage", getString(R.string.success_register)));
+                                    finish();
+                                    showProgress(false);
                                 } else {
                                     // Register failure, send message to user
                                     Toast.makeText(getApplicationContext(), getString(R.string.error_authentication), Toast.LENGTH_SHORT).show();
@@ -166,9 +167,9 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
                         });
             }
         } else {
-            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-            intent.putExtra("connectionErrorMessage", getString(R.string.error_no_internet_connection));
-            startActivity(intent);
+            setResult(Activity.RESULT_CANCELED,
+                    new Intent().putExtra("registryErrorMessage", getString(R.string.error_no_internet_connection)));
+            finish();
         }
     }
 

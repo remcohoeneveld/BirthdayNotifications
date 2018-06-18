@@ -3,6 +3,7 @@ package nl.remcohoeneveld.birthdaynotifications;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -86,22 +87,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             }
         });
 
-
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-            String registerSuccessMessage = extras.getString("registerSuccessMessage");
-            String connectionErrorMessage = extras.getString("connectionErrorMessage");
-
-            if (registerSuccessMessage != null) {
-                Toast.makeText(getApplicationContext(), registerSuccessMessage, Toast.LENGTH_SHORT).show();
-            }
-
-            if (connectionErrorMessage != null) {
-                Toast.makeText(getApplicationContext(), connectionErrorMessage, Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
         Button mEmailSignInButton = findViewById(R.id.email_sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -115,7 +100,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(getApplicationContext(), RegisterActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent,500);
             }
         });
 
@@ -145,14 +130,14 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
             // Check for a valid password, if the user entered one.
             if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
-                mPasswordView.setError(getString(R.string.error_invalid_password));
+                mPasswordView.setError(getString(R.string.error_incorrect_password));
                 focusView = mPasswordView;
                 cancel = true;
             }
 
             // specific for Firebase password minimal length of 6
             if (password.length() < 6) {
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
+                mPasswordView.setError(getString(R.string.error_invalid_password));
                 mPasswordView.requestFocus();
             }
 
@@ -179,12 +164,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 if (task.isSuccessful()) {
-                                    // Sign in success, go to the correct Activity
                                     Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                                     startActivity(intent);
+                                    showProgress(false);
                                 } else {
                                     // If sign in fails, display a message to the user.
-                                    Toast.makeText(getApplicationContext(), "Authentication failed.", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(getApplicationContext(), getString(R.string.error_authentication), Toast.LENGTH_SHORT).show();
                                     showProgress(false);
                                 }
                             }
@@ -333,6 +318,24 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         int ADDRESS = 0;
         int IS_PRIMARY = 1;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == Activity.RESULT_OK) {
+            String registrySuccessMessage = data.getStringExtra("registrySuccessMessage");
+
+            if (registrySuccessMessage != null) {
+                Toast.makeText(getApplicationContext(), registrySuccessMessage, Toast.LENGTH_SHORT).show();
+            }
+        }
+        if (resultCode == Activity.RESULT_CANCELED){
+            String registryErrorMessage = data.getStringExtra("registryErrorMessage");
+
+            if (registryErrorMessage != null) {
+                Toast.makeText(getApplicationContext(), registryErrorMessage, Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }
 
