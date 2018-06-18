@@ -27,11 +27,11 @@
                     android:id="@+id/nickname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/prompt_password"
+                    android:hint="@string/prompt_nickname"
                     android:imeActionId="6"
-                    android:imeActionLabel="@string/action_register_short"
+                    android:imeActionLabel="@string/action_nickname_short"
                     android:imeOptions="actionUnspecified"
-                    android:inputType="textPassword"
+                    android:inputType="textPersonName"
                     android:maxLines="1"
                     android:singleLine="true" />
 
@@ -45,8 +45,8 @@
                     android:id="@+id/fullname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/prompt_email"
-                    android:inputType="textEmailAddress"
+                    android:hint="@string/prompt_fullName"
+                    android:inputType="textPersonName"
                     android:maxLines="1"
                     android:singleLine="true" />
 
@@ -58,6 +58,7 @@
 
                 <EditText
                     android:id="@+id/birthdate"
+                    android:hint="@string/birthday_hint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -71,7 +72,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="@string/action_register_account"
+                android:text="@string/action_add_birthday"
                 android:textStyle="bold" />
 
         </LinearLayout>

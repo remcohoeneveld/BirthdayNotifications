@@ -92,8 +92,13 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             String registerSuccessMessage = extras.getString("registerSuccessMessage");
             String connectionErrorMessage = extras.getString("connectionErrorMessage");
 
+            if (registerSuccessMessage != null) {
                 Toast.makeText(getApplicationContext(), registerSuccessMessage, Toast.LENGTH_SHORT).show();
+            }
+
+            if (connectionErrorMessage != null) {
                 Toast.makeText(getApplicationContext(), connectionErrorMessage, Toast.LENGTH_SHORT).show();
+            }
 
         }
 
@@ -109,7 +114,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         mEmailRegisterButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+                Intent intent = new Intent(getApplicationContext(), RegisterActivity.class);
                 startActivity(intent);
             }
         });
@@ -175,7 +180,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 if (task.isSuccessful()) {
                                     // Sign in success, go to the correct Activity
-                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                                     startActivity(intent);
                                 } else {
                                     // If sign in fails, display a message to the user.

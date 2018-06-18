@@ -1,5 +1,6 @@
 package nl.remcohoeneveld.birthdaynotifications;
 
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -35,13 +36,14 @@ public class AddBirthdayActivity extends AppCompatActivity {
     private EditText mNicknameView;
     private EditText mBirthdayView;
     private FirebaseDatabase database;
+    private DatabaseReference myRef;
     private FirebaseUser user;
     NotificationCompat.Builder notification;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_add_birthday);
 
         // creating a new notification with the channelID of the application
         notification = new NotificationCompat.Builder(this, "BirthdayNotifications");
@@ -49,58 +51,38 @@ public class AddBirthdayActivity extends AppCompatActivity {
 
         // Write a message to the database
         database = FirebaseDatabase.getInstance();
-        //myRef = database.getReference("message");
 
         user = FirebaseAuth.getInstance().getCurrentUser();
 
         mFullnameView = findViewById(R.id.fullname);
         mNicknameView = findViewById(R.id.nickname);
         mBirthdayView = findViewById(R.id.birthdate);
-
-        Button mMessageButton = findViewById(R.id.add_birthday_button);
-        mMessageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (user != null) {
-                    String uid = user.getUid();
-                    String email = user.getEmail();
-
-                    String fullName = mFullnameView.getText().toString();
-                    String nickname = mNicknameView.getText().toString();
-                    Date birthDay =  new Date(mBirthdayView.getText().toString());
-
-                    writeUserData(uid,email,fullName,nickname,birthDay);
-                }
-            }
-        });
-
         if (NetworkHelper.initializeNetworkHelper(this)) {
-            if (user != null) {
-                // Name, email address, and profile photo Url
-                String name = user.getDisplayName();
-                String email = user.getEmail();
-                Uri photoUrl = user.getPhotoUrl();
 
-                // Check if user's email is verified
-                boolean emailVerified = user.isEmailVerified();
+            Button mMessageButton = findViewById(R.id.add_birthday_button);
+            mMessageButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (user != null) {
+                        String uid = user.getUid();
+                        String email = user.getEmail();
 
-                // The user's ID, unique to the Firebase project. Do NOT use this value to
-                // authenticate with your backend server, if you have onremcoe. Use
-                // FirebaseUser.getToken() instead.
-                String uid = user.getUid();
+                        myRef = database.getReference("users/" + uid);
+                        String key = myRef.push().getKey();
 
+                        String fullName = mFullnameView.getText().toString();
+                        String nickname = mNicknameView.getText().toString();
+                        Date birthDay = new Date(mBirthdayView.getText().toString());
 
-                Log.v(TAG, "name=" + name);
-                Log.v(TAG, "email=" + email);
-                Log.v(TAG, "photoUrl=" + photoUrl);
-                Log.v(TAG, "emailVerified=" + emailVerified);
+                        writeUserData(uid, key, fullName, nickname, birthDay);
 
-                Toast.makeText(getApplicationContext(), "You signed in as " + email, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Intent intent = new Intent(AddBirthdayActivity.this, MainActivity.class);
+                        startActivity(intent);
+                    }
+                }
+            });
 
-            } else {
-                Intent intent = new Intent(AddBirthdayActivity.this, MainActivity.class);
-                startActivity(intent);
-            }
         } else {
             Intent intent = new Intent(AddBirthdayActivity.this, LoginActivity.class);
             startActivity(intent);
@@ -108,43 +90,23 @@ public class AddBirthdayActivity extends AppCompatActivity {
     }
 
 
-    public void writeUserData(String userId, String email, String fullName, String nickname, Date birthday) {
-        String key = database.getReference("users/" + userId).push().getKey();
-        database.getReference("users/" + userId + "/" + key).setValue(new Birthday(birthday.toString(),fullName,nickname));
+    public void writeUserData(String userId, String key, String fullName, String nickname, Date birthday) {
+        database.getReference("users/" + userId + "/" + key).setValue(new Birthday(birthday.toString(), fullName, nickname));
 
-        Log.d("Added bday for : ",email);
+        database.getReference("users/" + userId + "/" + key).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                setResult(Activity.RESULT_OK,
+                        new Intent().putExtra("addSuccessMessage", getString(R.string.add_success_message)));
+                finish();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                setResult(Activity.RESULT_CANCELED,
+                        new Intent().putExtra("addErrorMessage", getString(R.string.add_error_message)));
+                finish();
+            }
+        });
     }
-
-
-    public void sendNotification(String value, Long time) {
-        notification.setSmallIcon(R.drawable.ic_stat_bdaycake);
-        // for people with accessibility services the ticker (setTicker() will be audibly announced)
-        notification.setTicker("There is a birthday notification");
-        // when is the notification shown
-        notification.setWhen(time);
-        // the content title of the notification
-        notification.setContentTitle("Notification!");
-        // the content text of the notification
-        notification.setContentText(value);
-
-        // creating a random integer for the Unique identifier
-        Random rand = new Random();
-
-        // getting a random integer
-        int n = rand.nextInt(50) + 1;
-
-        // creating the notifcation intent
-        Intent intent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        notification.setContentIntent(pendingIntent);
-
-        // building the notifcation manager
-        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-
-        // notifying the notifcation manager (checking of the nm != null)
-        assert nm != null;
-        nm.notify(n, notification.build());
-    }
-
-
 }
