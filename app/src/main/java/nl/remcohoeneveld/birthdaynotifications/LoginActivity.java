@@ -90,13 +90,14 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             String registerSuccessMessage = extras.getString("registerSuccessMessage");
+            String connectionErrorMessage = extras.getString("connectionErrorMessage");
 
-            if (!registerSuccessMessage.isEmpty()) {
                 Toast.makeText(getApplicationContext(), registerSuccessMessage, Toast.LENGTH_SHORT).show();
-            }
+                Toast.makeText(getApplicationContext(), connectionErrorMessage, Toast.LENGTH_SHORT).show();
+
         }
 
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
+        Button mEmailSignInButton = findViewById(R.id.email_sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -104,7 +105,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             }
         });
 
-        Button mEmailRegisterButton = (Button) findViewById(R.id.register_account_button);
+        Button mEmailRegisterButton = findViewById(R.id.register_account_button);
         mEmailRegisterButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -125,7 +126,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      */
 
     private void signIn() {
-        if (haveNetworkConnection()) {
+        if (NetworkHelper.initializeNetworkHelper(this)) {
             // Reset errors.
             mEmailView.setError(null);
             mPasswordView.setError(null);
@@ -146,7 +147,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
             // specific for Firebase password minimal length of 6
             if (password.length() < 6) {
-                mPasswordView.setError(getString(R.string.error_invalid_password_length));
+                mPasswordView.setError(getString(R.string.error_incorrect_password));
                 mPasswordView.requestFocus();
             }
 
@@ -185,7 +186,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                         });
             }
         } else{
-            Toast.makeText(getApplicationContext(), "No Internet connection available.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), getString(R.string.error_no_internet_connection), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -233,12 +234,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     }
 
     private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
         return email.contains("@");
     }
 
     private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
         return password.length() > 4;
     }
 
@@ -329,23 +328,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         int ADDRESS = 0;
         int IS_PRIMARY = 1;
-    }
-
-    private boolean haveNetworkConnection() {
-        boolean haveConnectedWifi = false;
-        boolean haveConnectedMobile = false;
-
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo[] netInfo = cm.getAllNetworkInfo();
-        for (NetworkInfo ni : netInfo) {
-            if (ni.getTypeName().equalsIgnoreCase("WIFI"))
-                if (ni.isConnected())
-                    haveConnectedWifi = true;
-            if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
-                if (ni.isConnected())
-                    haveConnectedMobile = true;
-        }
-        return haveConnectedWifi || haveConnectedMobile;
     }
 }
 

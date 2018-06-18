@@ -65,12 +65,12 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
         // Set up the login form.
-        mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
+        mEmailView = findViewById(R.id.email);
         populateAutoComplete();
 
         mAuth = FirebaseAuth.getInstance();
 
-        mPasswordView = (EditText) findViewById(R.id.password);
+        mPasswordView = findViewById(R.id.password);
         mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
@@ -83,7 +83,7 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
         });
 
         // clicking the register button fires the onclick for register function
-        Button mEmailRegisterButton = (Button) findViewById(R.id.register_button);
+        Button mEmailRegisterButton = findViewById(R.id.register_button);
         mEmailRegisterButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -103,66 +103,72 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
      */
 
     private void register(){
-        // Reset errors.
-        mEmailView.setError(null);
-        mPasswordView.setError(null);
+        if (NetworkHelper.initializeNetworkHelper(this)) {
+            // Reset errors.
+            mEmailView.setError(null);
+            mPasswordView.setError(null);
 
-        // Store values at the time of the login attempt.
-        String email = mEmailView.getText().toString();
-        String password = mPasswordView.getText().toString();
+            // Store values at the time of the login attempt.
+            String email = mEmailView.getText().toString();
+            String password = mPasswordView.getText().toString();
 
-        boolean cancel = false;
-        View focusView = null;
+            boolean cancel = false;
+            View focusView = null;
 
-        // Check for a valid password, if the user entered one.
-        if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
-            mPasswordView.setError(getString(R.string.error_invalid_password));
-            focusView = mPasswordView;
-            cancel = true;
-        }
+            // Check for a valid password, if the user entered one.
+            if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
+                mPasswordView.setError(getString(R.string.error_invalid_password));
+                focusView = mPasswordView;
+                cancel = true;
+            }
 
-        // Check for a valid email address.
-        if (TextUtils.isEmpty(email)) {
-            mEmailView.setError(getString(R.string.error_field_required));
-            focusView = mEmailView;
-            cancel = true;
-        } else if (!isEmailValid(email)) {
-            mEmailView.setError(getString(R.string.error_invalid_email));
-            focusView = mEmailView;
-            cancel = true;
-        }
+            // Check for a valid email address.
+            if (TextUtils.isEmpty(email)) {
+                mEmailView.setError(getString(R.string.error_field_required));
+                focusView = mEmailView;
+                cancel = true;
+            } else if (!isEmailValid(email)) {
+                mEmailView.setError(getString(R.string.error_invalid_email));
+                focusView = mEmailView;
+                cancel = true;
+            }
 
-        // Check if length of password not lower then six (firebase requirement)
-        if (password.length() <6){
-            mPasswordView.setError("Minimal length of password should be 6");
-            mPasswordView.requestFocus();
-        }
+            // Check if length of password not lower then six (firebase requirement)
+            if (password.length() < 6) {
+                mPasswordView.setError("Minimal length of password should be 6");
+                mPasswordView.requestFocus();
+            }
 
-        if (cancel) {
-            // There was an error; don't attempt login and focus the first
-            // form field with an error.
-            focusView.requestFocus();
-        } else {
-            // Show a progress spinner, and kick off a background task to
-            // perform the user login attempt.
-            showProgress(true);
+            if (cancel) {
+                // There was an error; don't attempt login and focus the first
+                // form field with an error.
+                focusView.requestFocus();
+            } else {
+                // Show a progress spinner, and kick off a background task to
+                // perform the user login attempt.
+                showProgress(true);
 
-            mAuth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                        @Override
-                        public void onComplete(@NonNull Task<AuthResult> task) {
-                            if (task.isSuccessful()) {
-                                // Register success, send message to user
-                                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                                intent.putExtra("registerSuccessMessage","Register completed successfully you can now login!");
-                                startActivity(intent);
-                            } else {
-                                // Register failure, send message to user
-                                Toast.makeText(getApplicationContext(), "Authentication failed.", Toast.LENGTH_SHORT).show();
-                                showProgress(false);
+                mAuth.createUserWithEmailAndPassword(email, password)
+                        .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                            @Override
+                            public void onComplete(@NonNull Task<AuthResult> task) {
+                                if (task.isSuccessful()) {
+                                    // Register success, send message to user
+                                    Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+                                    intent.putExtra("registerSuccessMessage", getString(R.string.success_register));
+                                    startActivity(intent);
+                                } else {
+                                    // Register failure, send message to user
+                                    Toast.makeText(getApplicationContext(), getString(R.string.error_authentication), Toast.LENGTH_SHORT).show();
+                                    showProgress(false);
+                                }
                             }
-                        }
-                    });
+                        });
+            }
+        } else {
+            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+            intent.putExtra("connectionErrorMessage", getString(R.string.error_no_internet_connection));
+            startActivity(intent);
         }
     }
 
@@ -211,12 +217,10 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
     }
 
     private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
         return email.contains("@");
     }
 
     private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
         return password.length() > 4;
     }
 

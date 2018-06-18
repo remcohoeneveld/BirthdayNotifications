@@ -21,4 +21,16 @@
     <string name="action_send_message">Save Message</string>
     <string name="error_invalid_password_length">Error not the correct length</string>
     <string name="action_register_short">register</string>
+    <string name="error_no_internet_connection">No Internet connection available.</string>
+    <string name="error_authentication">Authentication failed.</string>
+    <string name="success_register">Register completed successfully you can now login!</string>
+    <string name="title_activity_menu">menu</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_add_birthday">AddBirthdayActivity</string>
 </resources>
