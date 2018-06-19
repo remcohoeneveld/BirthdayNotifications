@@ -168,7 +168,7 @@ public class RegisterActivity extends AppCompatActivity implements LoaderCallbac
             }
         } else {
             setResult(Activity.RESULT_CANCELED,
-                    new Intent().putExtra("registryErrorMessage", getString(R.string.error_no_internet_connection)));
+                    new Intent());
             finish();
         }
     }

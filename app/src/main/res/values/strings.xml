@@ -21,7 +21,7 @@
     <string name="action_send_message">Save Message</string>
     <string name="error_invalid_password_length">Error not the correct length</string>
     <string name="action_register_short">register</string>
-    <string name="error_no_internet_connection">No Internet connection available.</string>
+    <string name="error_no_internet_connection">No Internet connection available</string>
     <string name="error_authentication">Authentication failed.</string>
     <string name="success_register">Register completed successfully you can now login!</string>
     <string name="title_activity_menu">menu</string>
@@ -39,7 +39,7 @@
     <string name="birthday_hint">mm/dd/yyyy</string>
     <string name="action_add_birthday">add birthday</string>
     <string name="add_success_message">Birthday successfully added</string>
-    <string name="add_error_message">something went wrong please try again</string>
+    <string name="add_error_message">You canceled the operation please try again</string>
     <string name="action_sign_off">sign off</string>
     <string name="action_log_out">logout</string>
     <string name="error_invalid_name">please type a correct name</string>

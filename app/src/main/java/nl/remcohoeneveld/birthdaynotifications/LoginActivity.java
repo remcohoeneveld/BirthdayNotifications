@@ -330,11 +330,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             }
         }
         if (resultCode == Activity.RESULT_CANCELED){
-            String registryErrorMessage = data.getStringExtra("registryErrorMessage");
-
-            if (registryErrorMessage != null) {
-                Toast.makeText(getApplicationContext(), registryErrorMessage, Toast.LENGTH_SHORT).show();
-            }
+                Toast.makeText(getApplicationContext(), getString(R.string.add_error_message), Toast.LENGTH_SHORT).show();
         }
     }
 }

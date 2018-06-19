@@ -1,20 +1,14 @@
 package nl.remcohoeneveld.birthdaynotifications;
 
 import android.app.Activity;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Intent;
-import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -23,21 +17,14 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.google.gson.Gson;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Random;
 
 public class AddBirthdayActivity extends AppCompatActivity {
 
-    private static final String TAG = "ERROR: ";
     private EditText mFullnameView;
     private EditText mNicknameView;
     private EditText mBirthdayView;
     private FirebaseDatabase database;
-    private DatabaseReference myRef;
     private FirebaseUser user;
     NotificationCompat.Builder notification;
 
@@ -82,15 +69,10 @@ public class AddBirthdayActivity extends AppCompatActivity {
                 mNicknameView.setError(null);
                 mBirthdayView.setError(null);
 
-                //get the firebase data
-                String uid = user.getUid();
-                myRef = database.getReference("users/" + uid);
-                String key = myRef.push().getKey();
-
                 // the fullname nickname and birthday
                 String fullName = mFullnameView.getText().toString();
                 String nickname = mNicknameView.getText().toString();
-                Date birthDay = new Date(mBirthdayView.getText().toString());
+                String birthDay = mBirthdayView.getText().toString();
 
                 boolean cancel = false;
                 View focusView = null;
@@ -110,7 +92,7 @@ public class AddBirthdayActivity extends AppCompatActivity {
                 }
 
                 // Check for a valid email address.
-                if (TextUtils.isEmpty(birthDay.toString())) {
+                if (TextUtils.isEmpty(birthDay)) {
                     mBirthdayView.setError(getString(R.string.error_invalid_date));
                     focusView = mBirthdayView;
                     cancel = true;
@@ -121,7 +103,7 @@ public class AddBirthdayActivity extends AppCompatActivity {
                     // form field with an error.
                     focusView.requestFocus();
                 } else {
-                    writeUserData(uid, key, fullName, nickname, birthDay);
+                    writeUserData(fullName, nickname, birthDay);
                 }
             } else {
                 finish();
@@ -130,8 +112,14 @@ public class AddBirthdayActivity extends AppCompatActivity {
     }
 
 
-    public void writeUserData(String userId, String key, String fullName, String nickname, Date birthday) {
-        database.getReference("users/" + userId + "/" + key).setValue(new Birthday(birthday.toString(), fullName, nickname));
+    public void writeUserData(String fullName, String nickname, String birthday) {
+
+        //get the firebase data
+        String userId = user.getUid();
+        DatabaseReference myRef = database.getReference("users/" + userId);
+        String key = myRef.push().getKey();
+
+        database.getReference("users/" + userId + "/" + key).setValue(new Birthday(new Date(birthday), fullName, nickname));
 
         database.getReference("users/" + userId + "/" + key).addValueEventListener(new ValueEventListener() {
             @Override
@@ -144,7 +132,7 @@ public class AddBirthdayActivity extends AppCompatActivity {
             @Override
             public void onCancelled(DatabaseError error) {
                 setResult(Activity.RESULT_CANCELED,
-                        new Intent().putExtra("addErrorMessage", getString(R.string.add_error_message)));
+                        new Intent());
                 finish();
             }
         });
