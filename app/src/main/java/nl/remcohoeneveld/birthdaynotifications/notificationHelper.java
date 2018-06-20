@@ -17,6 +17,11 @@ public class notificationHelper {
     public notificationHelper(){}
 
     public void sendNotification(String value, Long time, Activity activity) {
+
+        // creating a new notification with the channelID of the application
+        notification = new NotificationCompat.Builder(activity, "BirthdayNotifications");
+        notification.setAutoCancel(true);
+
         notification.setSmallIcon(R.drawable.ic_stat_bdaycake);
         // for people with accessibility services the ticker (setTicker() will be audibly announced)
         notification.setTicker("There is a birthday notification");
