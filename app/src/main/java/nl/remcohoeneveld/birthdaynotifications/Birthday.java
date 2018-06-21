@@ -1,12 +1,14 @@
 package nl.remcohoeneveld.birthdaynotifications;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class Birthday {
 
     public Date date_of_birth;
     public String full_name;
     public String nickname;
+    public String uniqueID;
 
     public Birthday(){
 
@@ -16,6 +18,7 @@ public class Birthday {
         this.date_of_birth = dateOfBirth;
         this.full_name = fullName;
         this.nickname = nickname;
+        this.uniqueID = UUID.randomUUID().toString();
     }
 
     public Date getDate_of_birth(){

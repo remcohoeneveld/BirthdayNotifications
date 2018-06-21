@@ -15,23 +15,37 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import com.firebase.ui.database.FirebaseListAdapter;
+import com.firebase.ui.database.FirebaseListOptions;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    List<String> nicknamesList;
+    List<Birthday> birthdays = new ArrayList<>();
+    String countryList[] = {};
+    FirebaseListAdapter<Birthday> mAdapter;
+    String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,38 +53,87 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
 
-
         setSupportActionBar(toolbar);
 
-
         // get database and user
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        final FirebaseDatabase database = FirebaseDatabase.getInstance();
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        ListView birthdayList = findViewById(R.id.birthdayList);
-
-        if (!nicknamesList.isEmpty()){
-            ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, R.layout.activity_main, R.id.textView, nicknamesList);
-            birthdayList.setAdapter(arrayAdapter);
-        }
-
+        final ListView birthdayList = findViewById(R.id.birthdayList);
 
         if (user != null) {
             //get the firebase data
-            String userId = user.getUid();
+            userId = user.getUid();
+
+            Query query = database.getReference("users").child(userId);
+
+            FirebaseListOptions<Birthday> options = new FirebaseListOptions.Builder<Birthday>()
+                    .setQuery(query, Birthday.class)
+                    .setLayout(android.R.layout.two_line_list_item)
+                    .build();
+
+            mAdapter = new FirebaseListAdapter<Birthday>(options) {
+                @Override
+                protected void populateView(View v, Birthday birthday, int position) {
+                    ((TextView) v.findViewById(android.R.id.text1)).setText(birthday.getFull_name());
+                    ((TextView) v.findViewById(android.R.id.text2)).setText(birthday.getNickname());
+                }
+            };
+
+            birthdayList.setAdapter(mAdapter);
+
+            birthdayList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    // Get the selected item text from ListView
+                    Object listItem = birthdayList.getItemAtPosition(position);
+
+                    try {
+                        // not used
+                        // Field fieldBirthdate = listItem.getClass().getDeclaredField("date_of_birth");
+                        // Object birthdate = fieldBirthdate.get(listItem);
+
+                        Field fieldNickname = listItem.getClass().getDeclaredField("nickname");
+                        Object nickname = fieldNickname.get(listItem);
+
+                        Field fieldUniqueID = listItem.getClass().getDeclaredField("uniqueID");
+                        Object uniqueID = fieldUniqueID.get(listItem);
+
+                        Query queryChild = database.getReference("users/" + userId).orderByChild("uniqueID").equalTo(uniqueID.toString());
+
+                        queryChild.addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                for (DataSnapshot snapshotChild: dataSnapshot.getChildren()) {
+                                    snapshotChild.getRef().removeValue();
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+                                Log.e("TAG", "onCancelled", databaseError.toException());
+                            }
+                        });
+
+                        Toast.makeText(getApplicationContext(), "Birthday of " + nickname, Toast.LENGTH_SHORT).show();
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchFieldException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            });
+
+
             database.getReference("users/" + userId).addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                            Birthday birthday = snapshot.getValue(Birthday.class);
+                        Birthday birthday = snapshot.getValue(Birthday.class);
 
-                            Gson gson = new Gson();
-                            String json = gson.toJson(birthday);
-
-                            Log.v("JSON:",json);
-
-                            if(birthday != null) {
-                                nicknamesList.add(birthday.nickname);
-                            }
+                        if (birthday != null) {
+                            birthdays.add(birthday);
+                        }
                     }
                 }
 
@@ -82,12 +145,12 @@ public class MainActivity extends AppCompatActivity
         }
 
 
-        FloatingActionButton fab =  findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(getApplicationContext(), AddBirthdayActivity.class);
-                startActivityForResult(intent,1000);
+                startActivityForResult(intent, 1000);
             }
         });
 
@@ -100,8 +163,18 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mAdapter.startListening();
+    }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mAdapter.stopListening();
     }
 
     @Override
@@ -174,7 +247,7 @@ public class MainActivity extends AppCompatActivity
                 Toast.makeText(getApplicationContext(), addSuccessMessage, Toast.LENGTH_SHORT).show();
             }
         }
-        if (resultCode == Activity.RESULT_CANCELED){
+        if (resultCode == Activity.RESULT_CANCELED) {
             Toast.makeText(getApplicationContext(), getString(R.string.add_error_message), Toast.LENGTH_SHORT).show();
         }
     }
