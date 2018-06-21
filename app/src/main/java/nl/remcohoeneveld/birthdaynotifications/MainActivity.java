@@ -2,8 +2,10 @@ package nl.remcohoeneveld.birthdaynotifications;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.util.Log;
 import android.view.View;
@@ -16,34 +18,34 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseListAdapter;
 import com.firebase.ui.database.FirebaseListOptions;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
-import com.google.gson.Gson;
 
 import java.lang.reflect.Field;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     List<Birthday> birthdays = new ArrayList<>();
-    String countryList[] = {};
     FirebaseListAdapter<Birthday> mAdapter;
     String userId;
 
@@ -72,10 +74,15 @@ public class MainActivity extends AppCompatActivity
                     .build();
 
             mAdapter = new FirebaseListAdapter<Birthday>(options) {
+                @RequiresApi(api = Build.VERSION_CODES.O)
                 @Override
                 protected void populateView(View v, Birthday birthday, int position) {
                     ((TextView) v.findViewById(android.R.id.text1)).setText(birthday.getFull_name());
-                    ((TextView) v.findViewById(android.R.id.text2)).setText(birthday.getNickname());
+
+                    Integer age = getAge(birthday.date_of_birth);
+                    String bday = "age of " + age;
+
+                    ((TextView) v.findViewById(android.R.id.text2)).setText(bday);
                 }
             };
 
@@ -251,4 +258,34 @@ public class MainActivity extends AppCompatActivity
             Toast.makeText(getApplicationContext(), getString(R.string.add_error_message), Toast.LENGTH_SHORT).show();
         }
     }
+
+
+    public static int getAge(Date dateOfBirth) {
+        Calendar today = Calendar.getInstance();
+        Calendar birthDate = Calendar.getInstance();
+        birthDate.setTime(dateOfBirth);
+        if (birthDate.after(today)) {
+            throw new IllegalArgumentException("You don't exist yet");
+        }
+        int todayYear = today.get(Calendar.YEAR);
+        int birthDateYear = birthDate.get(Calendar.YEAR);
+        int todayDayOfYear = today.get(Calendar.DAY_OF_YEAR);
+        int birthDateDayOfYear = birthDate.get(Calendar.DAY_OF_YEAR);
+        int todayMonth = today.get(Calendar.MONTH);
+        int birthDateMonth = birthDate.get(Calendar.MONTH);
+        int todayDayOfMonth = today.get(Calendar.DAY_OF_MONTH);
+        int birthDateDayOfMonth = birthDate.get(Calendar.DAY_OF_MONTH);
+        int age = todayYear - birthDateYear;
+
+        // If birth date is greater than todays date (after 2 days adjustment of leap year) then decrement age one year
+        if ((birthDateDayOfYear - todayDayOfYear > 3) || (birthDateMonth > todayMonth)){
+            age--;
+
+            // If birth date and todays date are of same month and birth day of month is greater than todays day of month then decrement age
+        } else if ((birthDateMonth == todayMonth) && (birthDateDayOfMonth > todayDayOfMonth)){
+            age--;
+        }
+        return age;
+    }
 }
+
