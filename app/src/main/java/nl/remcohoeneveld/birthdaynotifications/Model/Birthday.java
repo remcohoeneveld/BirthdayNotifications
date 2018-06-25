@@ -1,4 +1,4 @@
-package nl.remcohoeneveld.birthdaynotifications;
+package nl.remcohoeneveld.birthdaynotifications.Model;
 
 import java.util.Date;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package nl.remcohoeneveld.birthdaynotifications;
+package nl.remcohoeneveld.birthdaynotifications.Helper;
 
 import android.app.Activity;
 import android.app.NotificationManager;
@@ -8,15 +8,18 @@ import android.support.v4.app.NotificationCompat;
 
 import java.util.Random;
 
+import nl.remcohoeneveld.birthdaynotifications.MainActivity;
+import nl.remcohoeneveld.birthdaynotifications.R;
+
 import static android.content.Context.NOTIFICATION_SERVICE;
 
-public class notificationHelper {
-
-    private NotificationCompat.Builder notification;
+public class notificationHelper extends NotificationCompat {
 
     public notificationHelper(){}
 
-    public void sendNotification(String value, Long time, Activity activity) {
+    public static void sendNotification(String value, Long time, Activity activity) {
+
+        NotificationCompat.Builder notification;
 
         // creating a new notification with the channelID of the application
         notification = new NotificationCompat.Builder(activity, "BirthdayNotifications");

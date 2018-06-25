@@ -1,4 +1,4 @@
-package nl.remcohoeneveld.birthdaynotifications;
+package nl.remcohoeneveld.birthdaynotifications.Model;
 
 public class User {
 

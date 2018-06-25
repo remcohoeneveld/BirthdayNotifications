@@ -18,6 +18,9 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import java.util.Date;
 
+import nl.remcohoeneveld.birthdaynotifications.Helper.NetworkHelper;
+import nl.remcohoeneveld.birthdaynotifications.Model.Birthday;
+
 public class AddBirthdayActivity extends AppCompatActivity {
 
     private EditText mFullnameView;

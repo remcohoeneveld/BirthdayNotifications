@@ -1,7 +1,17 @@
 package nl.remcohoeneveld.birthdaynotifications;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -33,21 +43,29 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.lang.reflect.Field;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import nl.remcohoeneveld.birthdaynotifications.Helper.DatabaseHelper;
+import nl.remcohoeneveld.birthdaynotifications.Helper.SameDateHelper;
+import nl.remcohoeneveld.birthdaynotifications.Helper.UniqueIDHelper;
+import nl.remcohoeneveld.birthdaynotifications.Model.Birthday;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-
-    List<Birthday> birthdays = new ArrayList<>();
     FirebaseListAdapter<Birthday> mAdapter;
     String userId;
+    String userName;
+    String bday;
+    private Context mContext  = MainActivity.this;
+    private Notification noti;
+    private NotificationManager nm;
+    PendingIntent contentIntent;
+
+    //database
+    private DatabaseHelper dbhelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,9 +80,19 @@ public class MainActivity extends AppCompatActivity
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         final ListView birthdayList = findViewById(R.id.birthdayList);
 
+        nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+
+        dbhelper = new DatabaseHelper(this);
+
         if (user != null) {
             //get the firebase data
             userId = user.getUid();
+
+            try {
+                dbhelper.addData(userId);
+            } catch (Exception e){
+                System.out.println("Exception occurred");
+            }
 
             Query query = database.getReference("users").child(userId);
 
@@ -80,9 +108,15 @@ public class MainActivity extends AppCompatActivity
                     ((TextView) v.findViewById(android.R.id.text1)).setText(birthday.getFull_name());
 
                     Integer age = getAge(birthday.date_of_birth);
-                    String bday = "age of " + age;
+                    TextView birthdayTextView2 = v.findViewById(android.R.id.text2);
 
-                    ((TextView) v.findViewById(android.R.id.text2)).setText(bday);
+                    if (SameDateHelper.initializeSamedate(birthday.getDate_of_birth())) {
+                        bday = "Its the birthday of " + birthday.nickname + " (age " + age + ")";
+                    } else {
+                        bday = "(age " + age + ")";
+                    }
+
+                    birthdayTextView2.setText(bday);
                 }
             };
 
@@ -95,10 +129,6 @@ public class MainActivity extends AppCompatActivity
                     Object listItem = birthdayList.getItemAtPosition(position);
 
                     try {
-                        // not used
-                        // Field fieldBirthdate = listItem.getClass().getDeclaredField("date_of_birth");
-                        // Object birthdate = fieldBirthdate.get(listItem);
-
                         Field fieldNickname = listItem.getClass().getDeclaredField("nickname");
                         Object nickname = fieldNickname.get(listItem);
 
@@ -110,7 +140,7 @@ public class MainActivity extends AppCompatActivity
                         queryChild.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
                             public void onDataChange(DataSnapshot dataSnapshot) {
-                                for (DataSnapshot snapshotChild: dataSnapshot.getChildren()) {
+                                for (DataSnapshot snapshotChild : dataSnapshot.getChildren()) {
                                     snapshotChild.getRef().removeValue();
                                 }
                             }
@@ -121,31 +151,12 @@ public class MainActivity extends AppCompatActivity
                             }
                         });
 
-                        Toast.makeText(getApplicationContext(), "Birthday of " + nickname, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Deleted birthday of " + nickname, Toast.LENGTH_SHORT).show();
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                     } catch (NoSuchFieldException e) {
                         e.printStackTrace();
                     }
-
-                }
-            });
-
-
-            database.getReference("users/" + userId).addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                        Birthday birthday = snapshot.getValue(Birthday.class);
-
-                        if (birthday != null) {
-                            birthdays.add(birthday);
-                        }
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError error) {
 
                 }
             });
@@ -176,6 +187,7 @@ public class MainActivity extends AppCompatActivity
     protected void onStart() {
         super.onStart();
         mAdapter.startListening();
+
     }
 
     @Override
@@ -184,14 +196,36 @@ public class MainActivity extends AppCompatActivity
         mAdapter.stopListening();
     }
 
+
     @Override
     public void onBackPressed() {
+
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            ShowLogoutDialog();
         }
+
+    }
+
+    private void ShowLogoutDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle(getString(R.string.add_logout_message));
+        builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                MainActivity.super.onBackPressed();
+                FirebaseAuth.getInstance().signOut();
+                dialog.dismiss();
+            }
+        });
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.dismiss();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     @Override
@@ -278,11 +312,11 @@ public class MainActivity extends AppCompatActivity
         int age = todayYear - birthDateYear;
 
         // If birth date is greater than todays date (after 2 days adjustment of leap year) then decrement age one year
-        if ((birthDateDayOfYear - todayDayOfYear > 3) || (birthDateMonth > todayMonth)){
+        if ((birthDateDayOfYear - todayDayOfYear > 3) || (birthDateMonth > todayMonth)) {
             age--;
 
             // If birth date and todays date are of same month and birth day of month is greater than todays day of month then decrement age
-        } else if ((birthDateMonth == todayMonth) && (birthDateDayOfMonth > todayDayOfMonth)){
+        } else if ((birthDateMonth == todayMonth) && (birthDateDayOfMonth > todayDayOfMonth)) {
             age--;
         }
         return age;

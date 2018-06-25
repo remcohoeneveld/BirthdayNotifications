@@ -1,4 +1,4 @@
-package nl.remcohoeneveld.birthdaynotifications;
+package nl.remcohoeneveld.birthdaynotifications.Helper;
 
 import android.app.Activity;
 import android.content.Context;
