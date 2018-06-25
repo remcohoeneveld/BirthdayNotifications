@@ -10,8 +10,8 @@ import nl.remcohoeneveld.birthdaynotifications.BroadcastReceiver.BirthdayReceive
 @SuppressLint("Registered")
 public class CronJobService extends Service {
 
+    // add the birthdayreceiver to the service to send the notifications in the background
     BirthdayReceiver birthdayReceiver = new BirthdayReceiver();
-
     public void onCreate()
     {
         super.onCreate();
@@ -20,6 +20,7 @@ public class CronJobService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
     {
+        // set the birthdayreceiver on the start commando
         birthdayReceiver.setBirthdayReceiver(this);
         return START_STICKY;
     }
@@ -27,7 +28,14 @@ public class CronJobService extends Service {
     @Override
     public void onStart(Intent intent, int startId)
     {
+        // onStart set the birthdayreceiver
         birthdayReceiver.setBirthdayReceiver(this);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        birthdayReceiver.cancelBirthdayReceiver(this);
     }
 
     @Override
@@ -35,5 +43,6 @@ public class CronJobService extends Service {
     {
         return null;
     }
+
 
 }

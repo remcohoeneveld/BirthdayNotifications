@@ -48,41 +48,38 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import nl.remcohoeneveld.birthdaynotifications.Helper.AgeHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.DatabaseHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.SameDateHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.UniqueIDHelper;
 import nl.remcohoeneveld.birthdaynotifications.Model.Birthday;
+import nl.remcohoeneveld.birthdaynotifications.Service.CronJobService;
 
-public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+
     FirebaseListAdapter<Birthday> mAdapter;
-    String userId;
-    String userName;
-    String bday;
-    private Context mContext  = MainActivity.this;
-    private Notification noti;
-    private NotificationManager nm;
-    PendingIntent contentIntent;
 
-    //database
-    private DatabaseHelper dbhelper;
+    public static MainActivity instance = null;
+    String userId;
+    String bday;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
 
+        // set the toolbar
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         // get database and user
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         final ListView birthdayList = findViewById(R.id.birthdayList);
+        // get the firebase user
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-        nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-
-        dbhelper = new DatabaseHelper(this);
+        // add the databasehelper to add the userid everytime the user has logged in succesfully (for notifications)
+        DatabaseHelper dbhelper = new DatabaseHelper(this);
 
         if (user != null) {
             //get the firebase data
@@ -90,7 +87,7 @@ public class MainActivity extends AppCompatActivity
 
             try {
                 dbhelper.addData(userId);
-            } catch (Exception e){
+            } catch (Exception e) {
                 System.out.println("Exception occurred");
             }
 
@@ -105,38 +102,46 @@ public class MainActivity extends AppCompatActivity
                 @RequiresApi(api = Build.VERSION_CODES.O)
                 @Override
                 protected void populateView(View v, Birthday birthday, int position) {
+                    //set the text1 value to fullname of the person
                     ((TextView) v.findViewById(android.R.id.text1)).setText(birthday.getFull_name());
 
-                    Integer age = getAge(birthday.date_of_birth);
-                    TextView birthdayTextView2 = v.findViewById(android.R.id.text2);
+                    //convert the date of birth to the age
+                    Integer age = AgeHelper.getAge(birthday.date_of_birth);
 
+                    // set the undertitle to the textview text2
+                    TextView underTitle = v.findViewById(android.R.id.text2);
+
+                    // if the date is the same as today then change the text to the birthday else just show the age
                     if (SameDateHelper.initializeSamedate(birthday.getDate_of_birth())) {
                         bday = "Its the birthday of " + birthday.nickname + " (age " + age + ")";
                     } else {
                         bday = "(age " + age + ")";
                     }
 
-                    birthdayTextView2.setText(bday);
+                    underTitle.setText(bday);
                 }
             };
 
+            // set the adapter mAdapter from firebase
             birthdayList.setAdapter(mAdapter);
-
             birthdayList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     // Get the selected item text from ListView
                     Object listItem = birthdayList.getItemAtPosition(position);
-
                     try {
+                        // get the nickname from the field (listItem)
                         Field fieldNickname = listItem.getClass().getDeclaredField("nickname");
                         Object nickname = fieldNickname.get(listItem);
 
+                        // get the uniqueID from the field (listitem)
                         Field fieldUniqueID = listItem.getClass().getDeclaredField("uniqueID");
                         Object uniqueID = fieldUniqueID.get(listItem);
 
+                        // create a query that the UniqueID is equal to the uniqueID of the birthday
                         Query queryChild = database.getReference("users/" + userId).orderByChild("uniqueID").equalTo(uniqueID.toString());
 
+                        // if the queryChild is clicked then remove the snapshotChild
                         queryChild.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
                             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -150,7 +155,7 @@ public class MainActivity extends AppCompatActivity
                                 Log.e("TAG", "onCancelled", databaseError.toException());
                             }
                         });
-
+                        // showing a message when deleting the birthday
                         Toast.makeText(getApplicationContext(), "Deleted birthday of " + nickname, Toast.LENGTH_SHORT).show();
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
@@ -181,25 +186,44 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        // stop the service when MainActivity is active
+        stopService(new Intent(this,CronJobService.class));
+
     }
 
     @Override
     protected void onStart() {
+        // important to check if the adapter is listening otherwise the listview will be empty
         super.onStart();
         mAdapter.startListening();
+        instance = this;
 
     }
 
     @Override
     protected void onStop() {
+        // important to check if the adapter has stopped listening on the stop
         super.onStop();
         mAdapter.stopListening();
+        instance = null;
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+         instance = this;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        instance = null;
+    }
 
     @Override
     public void onBackPressed() {
 
+        // when onBackPressed show the LogOutDialog
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
@@ -260,6 +284,7 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
+        //@ TODO: 26/06/2018 change these ids and fill them with the correct activity
         if (id == R.id.nav_camera) {
             // Handle the camera action
         } else if (id == R.id.nav_gallery) {
@@ -281,6 +306,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // showing a message when a new birthday is created succesfully and checking if the operation is not cancelled
         if (resultCode == Activity.RESULT_OK) {
             String addSuccessMessage = data.getStringExtra("addSuccessMessage");
 
@@ -291,35 +317,6 @@ public class MainActivity extends AppCompatActivity
         if (resultCode == Activity.RESULT_CANCELED) {
             Toast.makeText(getApplicationContext(), getString(R.string.add_error_message), Toast.LENGTH_SHORT).show();
         }
-    }
-
-
-    public static int getAge(Date dateOfBirth) {
-        Calendar today = Calendar.getInstance();
-        Calendar birthDate = Calendar.getInstance();
-        birthDate.setTime(dateOfBirth);
-        if (birthDate.after(today)) {
-            throw new IllegalArgumentException("You don't exist yet");
-        }
-        int todayYear = today.get(Calendar.YEAR);
-        int birthDateYear = birthDate.get(Calendar.YEAR);
-        int todayDayOfYear = today.get(Calendar.DAY_OF_YEAR);
-        int birthDateDayOfYear = birthDate.get(Calendar.DAY_OF_YEAR);
-        int todayMonth = today.get(Calendar.MONTH);
-        int birthDateMonth = birthDate.get(Calendar.MONTH);
-        int todayDayOfMonth = today.get(Calendar.DAY_OF_MONTH);
-        int birthDateDayOfMonth = birthDate.get(Calendar.DAY_OF_MONTH);
-        int age = todayYear - birthDateYear;
-
-        // If birth date is greater than todays date (after 2 days adjustment of leap year) then decrement age one year
-        if ((birthDateDayOfYear - todayDayOfYear > 3) || (birthDateMonth > todayMonth)) {
-            age--;
-
-            // If birth date and todays date are of same month and birth day of month is greater than todays day of month then decrement age
-        } else if ((birthDateMonth == todayMonth) && (birthDateDayOfMonth > todayDayOfMonth)) {
-            age--;
-        }
-        return age;
     }
 }
 
