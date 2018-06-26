@@ -12,7 +12,6 @@ import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.PowerManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.DataSnapshot;

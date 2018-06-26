@@ -43,15 +43,18 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import nl.remcohoeneveld.birthdaynotifications.Helper.AgeHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.DatabaseHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.SameDateHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.UniqueIDHelper;
+import nl.remcohoeneveld.birthdaynotifications.Helper.UntilDateHelper;
 import nl.remcohoeneveld.birthdaynotifications.Model.Birthday;
 import nl.remcohoeneveld.birthdaynotifications.Service.CronJobService;
 
@@ -110,12 +113,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
                     // set the undertitle to the textview text2
                     TextView underTitle = v.findViewById(android.R.id.text2);
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy", Locale.getDefault());
 
                     // if the date is the same as today then change the text to the birthday else just show the age
                     if (SameDateHelper.initializeSamedate(birthday.getDate_of_birth())) {
-                        bday = "Its the birthday of " + birthday.nickname + " (age " + age + ")";
+                        bday = "Its the birthday of " + birthday.nickname + " (age " + age + ") " + dateFormat.format(birthday.date_of_birth);
                     } else {
-                        bday = "(age " + age + ")";
+                        bday = "(age " + age + ") " + dateFormat.format(birthday.date_of_birth);
                     }
 
                     underTitle.setText(bday);
@@ -130,6 +134,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     // Get the selected item text from ListView
                     Object listItem = birthdayList.getItemAtPosition(position);
                     try {
+
+                        // get the nickname from the field (listItem)
+                        Field fieldDate = listItem.getClass().getDeclaredField("date_of_birth");
+                        Object date_of_birth = fieldDate.get(listItem);
+
                         // get the nickname from the field (listItem)
                         Field fieldNickname = listItem.getClass().getDeclaredField("nickname");
                         Object nickname = fieldNickname.get(listItem);
@@ -138,25 +147,35 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         Field fieldUniqueID = listItem.getClass().getDeclaredField("uniqueID");
                         Object uniqueID = fieldUniqueID.get(listItem);
 
+
+                        Toast.makeText(getApplicationContext(), "birthday of " + nickname + "has "+ UntilDateHelper.getUntilDate((Date) date_of_birth)+" more days to go", Toast.LENGTH_SHORT).show();
+
+
+                        // FOR DELETING AN ITEM OUT OF FIREBASS @todo put this is seperate activity call it from mainactivity
                         // create a query that the UniqueID is equal to the uniqueID of the birthday
-                        Query queryChild = database.getReference("users/" + userId).orderByChild("uniqueID").equalTo(uniqueID.toString());
+                        //Query queryChild = database.getReference("users/" + userId).orderByChild("uniqueID").equalTo(uniqueID.toString());
 
                         // if the queryChild is clicked then remove the snapshotChild
-                        queryChild.addListenerForSingleValueEvent(new ValueEventListener() {
-                            @Override
-                            public void onDataChange(DataSnapshot dataSnapshot) {
-                                for (DataSnapshot snapshotChild : dataSnapshot.getChildren()) {
-                                    snapshotChild.getRef().removeValue();
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(DatabaseError databaseError) {
-                                Log.e("TAG", "onCancelled", databaseError.toException());
-                            }
-                        });
+//                        queryChild.addListenerForSingleValueEvent(new ValueEventListener() {
+//                            @Override
+//                            public void onDataChange(DataSnapshot dataSnapshot) {
+//                                for (DataSnapshot snapshotChild : dataSnapshot.getChildren()) {
+//                                    //snapshotChild.getRef().removeValue();
+//
+//
+//
+//                                }
+//                            }
+//
+//                            @Override
+//                            public void onCancelled(DatabaseError databaseError) {
+//                                Log.e("TAG", "onCancelled", databaseError.toException());
+//                            }
+//                        });
                         // showing a message when deleting the birthday
-                        Toast.makeText(getApplicationContext(), "Deleted birthday of " + nickname, Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(getApplicationContext(), "Deleted birthday of " + nickname, Toast.LENGTH_SHORT).show();
+
+
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                     } catch (NoSuchFieldException e) {
