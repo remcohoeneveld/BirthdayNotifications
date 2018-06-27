@@ -32,23 +32,34 @@
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
-
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".AddBirthdayActivity"
             android:label="@string/title_activity_add_birthday"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar" />
 
-        </activity>
-        <receiver android:process=":remote" android:name=".BroadcastReceiver.BirthdayReceiver"
-            tools:ignore="InnerclassSeparator">
-        </receiver>
+        <receiver
+            android:name=".BroadcastReceiver.BirthdayReceiver"
+            android:process=":remote"
+            tools:ignore="InnerclassSeparator" />
+
         <service
             android:name=".Service.CronJobService"
             android:label="CronJobService"
-            tools:ignore="InnerclassSeparator">
-        </service>
+            tools:ignore="InnerclassSeparator" />
+
+        <activity android:name=".DeleteBirthdayActivity"
+            android:label="@string/title_activity_delete_birthday">
+
+        </activity>
+        <activity android:name=".EditBirthdayActivity"
+            android:label="@string/title_activity_edit_birthday">
+
+        </activity>
+        <activity android:name=".EditBirthdayFormActivity"
+            android:label="@string/title_activity_edit_birthday">
+
+        </activity>
     </application>
 
 </manifest>

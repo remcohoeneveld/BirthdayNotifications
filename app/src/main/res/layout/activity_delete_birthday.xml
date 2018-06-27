@@ -4,17 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".MainActivity"
-    tools:showIn="@layout/app_bar_main">
+    tools:context=".DeleteBirthdayActivity">
 
     <ListView
-        android:id="@+id/birthdayList"
+        android:id="@+id/birthdayListRemove"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:divider="@color/colorAccent"
         android:dividerHeight="1dp"
-        android:padding="20dp"
-        />
-
+        android:padding="20dp" />
 </android.support.constraint.ConstraintLayout>

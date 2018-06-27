@@ -45,4 +45,10 @@
     <string name="error_invalid_name">please type a correct name</string>
     <string name="error_invalid_date">please fill in a date</string>
     <string name="add_logout_message">Do you really want to log out?</string>
+    <string name="delete_birthday">Delete birthday</string>
+    <string name="edit_birthday">Edit birthday</string>
+    <string name="action_edit_birthday">Edit birthday</string>
+    <string name="title_activity_edit_birthday">Edit birthdays</string>
+    <string name="title_activity_delete_birthday">Delete birthdays</string>
+    <string name="edit_succes_message">Birthday succesfully edited</string>
 </resources>

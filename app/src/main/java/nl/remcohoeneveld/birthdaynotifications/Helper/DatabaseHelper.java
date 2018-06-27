@@ -12,8 +12,8 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     private static final String TAG = "DatabaseHelper";
     private static final String TABLE_NAME = "users_table";
     private static final String UID = "UID";
-    private SQLiteDatabase bdayDB;
 
+    private SQLiteDatabase bdayDB;
     public DatabaseHelper(Context context) {
         super(context, TABLE_NAME,null,1);
     }
@@ -49,5 +49,18 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         return data;
     }
 
+    @Override
+    public synchronized void close() {
+        super.close();
+    }
 
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+        super.onOpen(db);
+    }
+
+    public void clearDatabase(String TABLE_NAME) {
+        String clearDBQuery = "DELETE FROM "+TABLE_NAME;
+        bdayDB.execSQL(clearDBQuery);
+    }
 }

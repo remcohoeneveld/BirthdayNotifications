@@ -36,24 +36,17 @@ import com.firebase.ui.database.FirebaseListAdapter;
 import com.firebase.ui.database.FirebaseListOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 import nl.remcohoeneveld.birthdaynotifications.Helper.AgeHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.DatabaseHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.SameDateHelper;
-import nl.remcohoeneveld.birthdaynotifications.Helper.UniqueIDHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.UntilDateHelper;
 import nl.remcohoeneveld.birthdaynotifications.Model.Birthday;
 import nl.remcohoeneveld.birthdaynotifications.Service.CronJobService;
@@ -63,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     FirebaseListAdapter<Birthday> mAdapter;
 
     public static MainActivity instance = null;
+    public static boolean active = false;
     String userId;
     String bday;
 
@@ -78,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // get database and user
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
         final ListView birthdayList = findViewById(R.id.birthdayList);
+
         // get the firebase user
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
@@ -134,7 +129,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     // Get the selected item text from ListView
                     Object listItem = birthdayList.getItemAtPosition(position);
                     try {
-
                         // get the nickname from the field (listItem)
                         Field fieldDate = listItem.getClass().getDeclaredField("date_of_birth");
                         Object date_of_birth = fieldDate.get(listItem);
@@ -143,37 +137,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         Field fieldNickname = listItem.getClass().getDeclaredField("nickname");
                         Object nickname = fieldNickname.get(listItem);
 
-                        // get the uniqueID from the field (listitem)
-                        Field fieldUniqueID = listItem.getClass().getDeclaredField("uniqueID");
-                        Object uniqueID = fieldUniqueID.get(listItem);
-
-
                         Toast.makeText(getApplicationContext(), "birthday of " + nickname + "has "+ UntilDateHelper.getUntilDate((Date) date_of_birth)+" more days to go", Toast.LENGTH_SHORT).show();
-
-
-                        // FOR DELETING AN ITEM OUT OF FIREBASS @todo put this is seperate activity call it from mainactivity
-                        // create a query that the UniqueID is equal to the uniqueID of the birthday
-                        //Query queryChild = database.getReference("users/" + userId).orderByChild("uniqueID").equalTo(uniqueID.toString());
-
-                        // if the queryChild is clicked then remove the snapshotChild
-//                        queryChild.addListenerForSingleValueEvent(new ValueEventListener() {
-//                            @Override
-//                            public void onDataChange(DataSnapshot dataSnapshot) {
-//                                for (DataSnapshot snapshotChild : dataSnapshot.getChildren()) {
-//                                    //snapshotChild.getRef().removeValue();
-//
-//
-//
-//                                }
-//                            }
-//
-//                            @Override
-//                            public void onCancelled(DatabaseError databaseError) {
-//                                Log.e("TAG", "onCancelled", databaseError.toException());
-//                            }
-//                        });
-                        // showing a message when deleting the birthday
-//                        Toast.makeText(getApplicationContext(), "Deleted birthday of " + nickname, Toast.LENGTH_SHORT).show();
 
 
                     } catch (IllegalAccessException e) {
@@ -216,7 +180,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onStart();
         mAdapter.startListening();
         instance = this;
+        active = true;
 
+        // stop the service when MainActivity is started
+        stopService(new Intent(this,CronJobService.class));
     }
 
     @Override
@@ -225,18 +192,29 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onStop();
         mAdapter.stopListening();
         instance = null;
+        active = false;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
          instance = this;
+         active = true;
+
+        // stop the service when MainActivity is active
+        stopService(new Intent(this,CronJobService.class));
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        instance = null;
+        active = false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        FirebaseAuth.getInstance().signOut();
     }
 
     @Override
@@ -250,6 +228,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             ShowLogoutDialog();
         }
 
+        // start the service when MainActivity is active
+        startService(new Intent(this,CronJobService.class));
+
+        active = false;
     }
 
     private void ShowLogoutDialog() {
@@ -304,18 +286,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int id = item.getItemId();
 
         //@ TODO: 26/06/2018 change these ids and fill them with the correct activity
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        if (id == R.id.nav_delete_birthday) {
+            Intent intent = new Intent(getApplicationContext(), DeleteBirthdayActivity.class);
+            startActivityForResult(intent, 1000);
+        } else if (id == R.id.nav_edit_birthday) {
+            Intent intent = new Intent(getApplicationContext(), EditBirthdayActivity.class);
+            startActivity(intent);
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);

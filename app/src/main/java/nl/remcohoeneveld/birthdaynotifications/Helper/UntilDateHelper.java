@@ -42,15 +42,4 @@ public class UntilDateHelper {
             return days;
         }
     }
-
-    private static boolean isWithinRange(Date testDate) {
-
-        Date startDateValue = new Date();
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.YEAR, 1);
-        Date nextYear = cal.getTime();
-        testDate.setYear(nextYear.getYear());
-
-        return !(testDate.before(startDateValue) || testDate.after(nextYear));
-    }
 }

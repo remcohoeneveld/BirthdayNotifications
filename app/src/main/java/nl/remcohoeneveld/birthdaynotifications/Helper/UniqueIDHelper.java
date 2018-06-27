@@ -13,8 +13,7 @@ public class UniqueIDHelper {
 
         Random rand = new Random();
 
-        int id = rand.nextInt(50) + 1;
         //return unique id
-        return id;
+        return rand.nextInt(2000) + 1;
     }
 }
