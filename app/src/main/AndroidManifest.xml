@@ -11,12 +11,13 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:fullBackupContent="@xml/backup_descriptor">
         <activity
             android:name=".RegisterActivity"
             android:label="@string/title_activity_register" />
@@ -32,33 +33,44 @@
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".AddBirthdayActivity"
-            android:label="@string/title_activity_add_birthday"
-            android:theme="@style/AppTheme.NoActionBar" />
-
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter android:label="@string/filter_title_birthdayreminder">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Accepts URIs that begin with "http://www.example.com/birthdayreminder” -->
+                <data android:scheme="http"
+                    android:host="www.example.com"
+                    android:pathPrefix="/birthdayreminder" />
+                <!-- note that the leading "/" is required for pathPrefix-->
+                <!-- Accepts URIs that begin with "example://birthdayreminder”
+                 -->
+            </intent-filter>
+        </activity>
         <receiver
             android:name=".BroadcastReceiver.BirthdayReceiver"
             android:process=":remote"
-            tools:ignore="InnerclassSeparator" />
-
+            tools:ignore="InnerclassSeparator"
+            />
         <service
             android:name=".Service.CronJobService"
             android:label="CronJobService"
-            tools:ignore="InnerclassSeparator" />
-
-        <activity android:name=".DeleteBirthdayActivity"
+            tools:ignore="InnerclassSeparator"
+            />
+        <activity
+            android:name=".DeleteBirthdayActivity"
             android:label="@string/title_activity_delete_birthday">
-
         </activity>
-        <activity android:name=".EditBirthdayActivity"
+        <activity
+            android:name=".EditBirthdayActivity"
             android:label="@string/title_activity_edit_birthday">
-
         </activity>
-        <activity android:name=".EditBirthdayFormActivity"
+        <activity
+            android:name=".EditBirthdayFormActivity"
             android:label="@string/title_activity_edit_birthday">
-
+        </activity>
+        <activity android:name=".AddBirthdayFormActivity"
+            android:label="@string/title_activity_add_birthday">
         </activity>
     </application>
 

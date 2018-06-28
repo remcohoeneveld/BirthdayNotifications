@@ -1,7 +1,10 @@
 package nl.remcohoeneveld.birthdaynotifications;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
@@ -23,6 +26,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
@@ -76,30 +80,34 @@ public class DeleteBirthdayActivity extends AppCompatActivity {
 
             FirebaseListOptions<Birthday> options = new FirebaseListOptions.Builder<Birthday>()
                     .setQuery(query, Birthday.class)
-                    .setLayout(android.R.layout.two_line_list_item)
+                    .setLayout(R.layout.birthday_listview)
                     .build();
 
             mAdapter = new FirebaseListAdapter<Birthday>(options) {
-                @RequiresApi(api = Build.VERSION_CODES.O)
                 @Override
                 protected void populateView(View v, Birthday birthday, int position) {
                     //set the text1 value to fullname of the person
-                    ((TextView) v.findViewById(android.R.id.text1)).setText(birthday.getFull_name());
+                    ((TextView) v.findViewById(R.id.text1)).setText(birthday.getFull_name());
 
                     //convert the date of birth to the age
                     Integer age = AgeHelper.getAge(birthday.date_of_birth);
+                    String ageMessage = age + " years old";
+                    ((TextView) v.findViewById(R.id.text2)).setText(ageMessage);
 
                     // set the undertitle to the textview text2
-                    TextView underTitle = v.findViewById(android.R.id.text2);
+                    TextView underTitle = v.findViewById(R.id.text3);
                     SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy", Locale.getDefault());
+
+                    ((TextView) v.findViewById(R.id.text4)).setText(dateFormat.format(birthday.date_of_birth));
 
                     // if the date is the same as today then change the text to the birthday else just show the age
                     if (SameDateHelper.initializeSamedate(birthday.getDate_of_birth())) {
-                        bday = "Birthday of " + birthday.nickname + " (age " + age + ") " + dateFormat.format(birthday.date_of_birth);
+                        bday = "Today is the birthday of " + birthday.nickname;
+                        underTitle.setTextColor(getResources().getColor(R.color.colorPrimaryDark));
                     } else {
-                        bday = dateFormat.format(birthday.date_of_birth);
+                        bday = birthday.nickname;
+                        underTitle.setTextColor(getResources().getColor(R.color.darkgrey));
                     }
-
                     underTitle.setText(bday);
                 }
             };
@@ -114,13 +122,13 @@ public class DeleteBirthdayActivity extends AppCompatActivity {
                     try {
                         // get the nickname from the field (listItem)
                         Field fieldNickname = listItem.getClass().getDeclaredField("nickname");
-                        Object nickname = fieldNickname.get(listItem);
+                        final Object nickname = fieldNickname.get(listItem);
 
                         // get the uniqueID from the field (listitem)
                         Field fieldUniqueID = listItem.getClass().getDeclaredField("uniqueID");
                         Object uniqueID = fieldUniqueID.get(listItem);
 
-                        // FOR DELETING AN ITEM OUT OF FIREBASS
+                        // FOR DELETING AN ITEM OUT OF FIREBASE
                         // create a query that the UniqueID is equal to the uniqueID of the birthday
 
                         Query queryChild = database.getReference("users/" + userId).orderByChild("uniqueID").equalTo(uniqueID.toString());
@@ -128,19 +136,18 @@ public class DeleteBirthdayActivity extends AppCompatActivity {
                         // if the queryChild is clicked then remove the snapshotChild
                         queryChild.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
-                            public void onDataChange(DataSnapshot dataSnapshot) {
+                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                                 for (DataSnapshot snapshotChild : dataSnapshot.getChildren()) {
-                                    snapshotChild.getRef().removeValue();
+                                    // fire the showDeleteDialog
+                                    ShowDeleteDialog(snapshotChild.getRef(), (String) nickname);
                                 }
                             }
 
                             @Override
-                            public void onCancelled(DatabaseError databaseError) {
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
                                 Log.e("TAG", "onCancelled", databaseError.toException());
                             }
                         });
-                        //showing a message when deleting the birthday
-                        Toast.makeText(getApplicationContext(), "Deleted birthday of " + nickname, Toast.LENGTH_SHORT).show();
 
 
                     } catch (IllegalAccessException e) {
@@ -153,6 +160,31 @@ public class DeleteBirthdayActivity extends AppCompatActivity {
             });
         }
 
+    }
+
+    private void ShowDeleteDialog(final DatabaseReference getRef, final String nickname) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(DeleteBirthdayActivity.this);
+        builder.setTitle(getString(R.string.remove_birthday_message));
+        builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // delete the reference
+                getRef.removeValue();
+                dialog.dismiss();
+
+                //showing a message when deleting the birthday
+                Toast.makeText(getApplicationContext(), "Deleted birthday of " + nickname, Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.dismiss();
+
+                //showing a message when not deleting the birthday
+                Toast.makeText(getApplicationContext(), "No birthday was deleted", Toast.LENGTH_SHORT).show();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     @Override

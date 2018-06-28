@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.PowerManager;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.google.firebase.FirebaseApp;
@@ -20,14 +21,9 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import nl.remcohoeneveld.birthdaynotifications.AddBirthdayActivity;
-import nl.remcohoeneveld.birthdaynotifications.DeleteBirthdayActivity;
-import nl.remcohoeneveld.birthdaynotifications.EditBirthdayActivity;
-import nl.remcohoeneveld.birthdaynotifications.EditBirthdayFormActivity;
 import nl.remcohoeneveld.birthdaynotifications.Helper.AgeHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.DatabaseHelper;
 import nl.remcohoeneveld.birthdaynotifications.Helper.SameDateHelper;
-import nl.remcohoeneveld.birthdaynotifications.Helper.UniqueIDHelper;
 import nl.remcohoeneveld.birthdaynotifications.LoginActivity;
 import nl.remcohoeneveld.birthdaynotifications.MainActivity;
 import nl.remcohoeneveld.birthdaynotifications.Model.Birthday;
@@ -48,69 +44,85 @@ public class BirthdayReceiver extends BroadcastReceiver {
     @SuppressLint("WakelockTimeout")
     @Override
     public void onReceive(Context context, final Intent intent) {
+        // get the powerManager
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         assert pm != null;
+        //wake up the device
         PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "");
         wl.acquire();
+        //what to do when awake
         FirebaseApp.initializeApp(context);
         final FirebaseDatabase database = FirebaseDatabase.getInstance();
         databaseHelper = new DatabaseHelper(context);
         nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
+        //set the context (we shall use this later on)
         mContext = context;
 
+        // Get the data from the database as a Cursor object
         Cursor data = databaseHelper.getData();
 
+        // get the known userID from the database
         while (data.moveToNext()) {
             // get the userID
             userID = data.getString(1);
         }
 
+        // if a UserID is found
         if (userID != null) {
             //close the database
             databaseHelper.close();
 
-            database.getReference("users/" + userID).addValueEventListener(new ValueEventListener() {
+            //get the database reference from the userID that was found
+            try {
+                database.getReference("users/" + userID).addValueEventListener(new ValueEventListener() {
 
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                        Birthday birthday = snapshot.getValue(Birthday.class);
-                        if (birthday != null) {
-                            // Don't use CheckBirthDayTask in MainActivity
-                            if (isMyServiceRunning(CronJobService.class)) {
-                                (new CheckBirthdayTask()).execute(birthday);
-                            } else {
-                                Log.d(TAG, "Service is not running anymore.");
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                            Birthday birthday = snapshot.getValue(Birthday.class);
+                            if (birthday != null) {
+                                // Don't use CheckBirthDayTask in MainActivity
+                                if (isMyServiceRunning(CronJobService.class)) {
+                                    (new CheckBirthdayTask()).execute(birthday);
+                                } else {
+                                    Log.d(TAG, "Service is not running anymore.");
+                                }
                             }
                         }
                     }
-                }
 
-                @Override
-                public void onCancelled(DatabaseError error) {
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
 
-                }
-            });
+                    }
+                });
+            } catch (Exception e){
+                System.out.println(context.getString(R.string.exception_error));
+            }
         }
 
         wl.release();
     }
 
     public void setBirthdayReceiver(Context context) {
+        // create an alarm manager from alarm service
         AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent i = new Intent(context, BirthdayReceiver.class);
         PendingIntent pi = PendingIntent.getBroadcast(context, 0, i, 0);
         assert am != null;
 
-        // Millisec * Second * Minute * Hour
+        //// Millisec * Second * Minute * Hour
+
         // Repeat once per 1 minute!
         //am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 60, pi);
+
         // Repeat once per day!
         am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 1000 * 60 * 60 * 24, pi);
     }
 
     public void cancelBirthdayReceiver(Context context) {
+        //cancel all outgoing alarms
         Intent intent = new Intent(context, BirthdayReceiver.class);
         PendingIntent sender = PendingIntent.getBroadcast(context, 0, intent, 0);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -131,8 +143,7 @@ public class BirthdayReceiver extends BroadcastReceiver {
         protected String doInBackground(Birthday... birthdays) {
             Log.d(TAG + " DoINBackGround", "On doInBackground...");
 
-            int count = birthdays.length;
-
+            // for the birthdays that occured create a notification from the birthday object
             for (Birthday bday : birthdays) {
                 if (SameDateHelper.initializeSamedate(bday.getDate_of_birth())) {
                     try {
@@ -155,6 +166,7 @@ public class BirthdayReceiver extends BroadcastReceiver {
             return "You are at PostExecute";
         }
 
+        // create notification function
         private void createNotification(String contentTitle, String contentText, Integer notificationID, Context context) {
 
             Log.d("createNotification", "title is [" + contentTitle + "]");
@@ -191,6 +203,7 @@ public class BirthdayReceiver extends BroadcastReceiver {
         }
     }
 
+    // check if service is running (if service is stopped don't call the async task (notifications))
     private boolean isMyServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
         assert manager != null;

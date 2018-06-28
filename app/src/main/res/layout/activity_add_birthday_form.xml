@@ -4,9 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".AddBirthdayActivity"
-    tools:showIn="@layout/activity_add_birthday">
+    tools:context=".AddBirthdayFormActivity"
+    android:background="@color/lightgrey">
 
     <ScrollView
         android:id="@+id/add_birthday_form"
@@ -19,13 +18,19 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="20dp"
+                />
+
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:layout_marginTop="5dp">
 
                 <EditText
                     android:id="@+id/nickname"
-                    android:layout_marginTop="5dp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/prompt_nickname"
@@ -59,13 +64,20 @@
 
                 <EditText
                     android:id="@+id/birthdate"
-                    android:hint="@string/birthday_hint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:ems="10"
+                    android:hint="@string/birthday_hint"
                     android:inputType="date" />
             </android.support.design.widget.TextInputLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="20dp"
+                />
 
             <Button
                 android:id="@+id/add_birthday_button"
@@ -75,9 +87,10 @@
                 android:layout_marginTop="16dp"
                 android:layout_weight="1"
                 android:background="@color/colorPrimaryDark"
-                android:textColor="#fff"
                 android:text="@string/action_add_birthday"
-                android:textStyle="bold" />
+                android:textColor="#fff"
+                android:textStyle="bold"
+                android:layout_margin="10dp"/>
 
         </LinearLayout>
     </ScrollView>

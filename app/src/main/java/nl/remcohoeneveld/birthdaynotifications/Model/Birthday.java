@@ -14,7 +14,6 @@ public class Birthday {
     public Integer notificationID;
 
     public Birthday(){
-
     }
 
     public Birthday(Date dateOfBirth, String fullName, String nickname) {

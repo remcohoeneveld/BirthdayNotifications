@@ -2,6 +2,7 @@ package nl.remcohoeneveld.birthdaynotifications;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -16,14 +17,17 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import nl.remcohoeneveld.birthdaynotifications.Helper.NetworkHelper;
 import nl.remcohoeneveld.birthdaynotifications.Model.Birthday;
 
-public class AddBirthdayActivity extends AppCompatActivity {
+public class AddBirthdayFormActivity extends AppCompatActivity {
 
-    public static boolean active = false;
     private EditText mFullnameView;
     private EditText mNicknameView;
     private EditText mBirthdayView;
@@ -33,7 +37,7 @@ public class AddBirthdayActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_birthday);
+        setContentView(R.layout.activity_add_birthday_form);
 
         // Write a message to the database
         database = FirebaseDatabase.getInstance();
@@ -114,47 +118,22 @@ public class AddBirthdayActivity extends AppCompatActivity {
         DatabaseReference myRef = database.getReference("users/" + userId);
         String key = myRef.push().getKey();
 
+
         database.getReference("users/" + userId + "/" + key).setValue(new Birthday(new Date(birthday), fullName, nickname));
         database.getReference("users/" + userId + "/" + key).addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 setResult(Activity.RESULT_OK,
                         new Intent().putExtra("addSuccessMessage", getString(R.string.add_success_message)));
                 finish();
             }
 
             @Override
-            public void onCancelled(DatabaseError error) {
+            public void onCancelled(@NonNull DatabaseError error) {
                 setResult(Activity.RESULT_CANCELED,
                         new Intent());
                 finish();
             }
         });
-    }
-
-    @Override
-    protected void onStart() {
-        // important to check if the adapter is listening otherwise the listview will be empty
-        super.onStart();
-        active = true;
-    }
-
-    @Override
-    protected void onStop() {
-        // important to check if the adapter has stopped listening on the stop
-        super.onStop();
-        active = false;
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        active = true;
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        active = false;
     }
 }

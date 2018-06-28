@@ -45,8 +45,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     public Cursor getData(){
         bdayDB = this.getWritableDatabase();
         String query = "SELECT * FROM " + TABLE_NAME;
-        Cursor data = bdayDB.rawQuery(query,null);
-        return data;
+        return bdayDB.rawQuery(query,null);
     }
 
     @Override

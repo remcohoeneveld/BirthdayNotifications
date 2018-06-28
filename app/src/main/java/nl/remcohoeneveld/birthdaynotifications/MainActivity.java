@@ -1,23 +1,12 @@
 package nl.remcohoeneveld.birthdaynotifications;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlarmManager;
 import android.app.AlertDialog;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
-import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -31,14 +20,12 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.firebase.ui.database.FirebaseListAdapter;
 import com.firebase.ui.database.FirebaseListOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
-
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -55,8 +42,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     FirebaseListAdapter<Birthday> mAdapter;
 
-    public static MainActivity instance = null;
-    public static boolean active = false;
     String userId;
     String bday;
 
@@ -93,28 +78,33 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             FirebaseListOptions<Birthday> options = new FirebaseListOptions.Builder<Birthday>()
                     .setQuery(query, Birthday.class)
-                    .setLayout(android.R.layout.two_line_list_item)
+                    .setLayout(R.layout.birthday_listview)
                     .build();
 
             mAdapter = new FirebaseListAdapter<Birthday>(options) {
-                @RequiresApi(api = Build.VERSION_CODES.O)
                 @Override
                 protected void populateView(View v, Birthday birthday, int position) {
                     //set the text1 value to fullname of the person
-                    ((TextView) v.findViewById(android.R.id.text1)).setText(birthday.getFull_name());
+                    ((TextView) v.findViewById(R.id.text1)).setText(birthday.getFull_name());
 
                     //convert the date of birth to the age
                     Integer age = AgeHelper.getAge(birthday.date_of_birth);
+                    String ageMessage = age + " years old";
+                    ((TextView) v.findViewById(R.id.text2)).setText(ageMessage);
 
                     // set the undertitle to the textview text2
-                    TextView underTitle = v.findViewById(android.R.id.text2);
+                    TextView underTitle = v.findViewById(R.id.text3);
                     SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy", Locale.getDefault());
+
+                    ((TextView) v.findViewById(R.id.text4)).setText(dateFormat.format(birthday.date_of_birth));
 
                     // if the date is the same as today then change the text to the birthday else just show the age
                     if (SameDateHelper.initializeSamedate(birthday.getDate_of_birth())) {
-                        bday = "Its the birthday of " + birthday.nickname + " (age " + age + ") " + dateFormat.format(birthday.date_of_birth);
+                        bday = "Today is the birthday of " + birthday.nickname;
+                        underTitle.setTextColor(getResources().getColor(R.color.colorPrimaryDark));
                     } else {
-                        bday = "(age " + age + ") " + dateFormat.format(birthday.date_of_birth);
+                        bday = birthday.nickname;
+                        underTitle.setTextColor(getResources().getColor(R.color.darkgrey));
                     }
 
                     underTitle.setText(bday);
@@ -137,8 +127,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         Field fieldNickname = listItem.getClass().getDeclaredField("nickname");
                         Object nickname = fieldNickname.get(listItem);
 
-                        Toast.makeText(getApplicationContext(), "birthday of " + nickname + "has "+ UntilDateHelper.getUntilDate((Date) date_of_birth)+" more days to go", Toast.LENGTH_SHORT).show();
-
+                        if (UntilDateHelper.getUntilDate((Date) date_of_birth) > 0) {
+                            Toast.makeText(getApplicationContext(), "Birthday of " + nickname + "has " + UntilDateHelper.getUntilDate((Date) date_of_birth) + " more days to go", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getApplicationContext(), "Today is the birthday of " + nickname, Toast.LENGTH_SHORT).show();
+                        }
 
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
@@ -155,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(getApplicationContext(), AddBirthdayActivity.class);
+                Intent intent = new Intent(getApplicationContext(), AddBirthdayFormActivity.class);
                 startActivityForResult(intent, 1000);
             }
         });
@@ -179,8 +172,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // important to check if the adapter is listening otherwise the listview will be empty
         super.onStart();
         mAdapter.startListening();
-        instance = this;
-        active = true;
 
         // stop the service when MainActivity is started
         stopService(new Intent(this,CronJobService.class));
@@ -191,15 +182,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // important to check if the adapter has stopped listening on the stop
         super.onStop();
         mAdapter.stopListening();
-        instance = null;
-        active = false;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-         instance = this;
-         active = true;
 
         // stop the service when MainActivity is active
         stopService(new Intent(this,CronJobService.class));
@@ -208,7 +195,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onPause() {
         super.onPause();
-        active = false;
     }
 
     @Override
@@ -227,11 +213,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             ShowLogoutDialog();
         }
-
-        // start the service when MainActivity is active
-        startService(new Intent(this,CronJobService.class));
-
-        active = false;
     }
 
     private void ShowLogoutDialog() {
@@ -240,7 +221,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 MainActivity.super.onBackPressed();
+                // sign out the user
                 FirebaseAuth.getInstance().signOut();
+                // start the service again
+                startService(new Intent(MainActivity.this,CronJobService.class));
                 dialog.dismiss();
             }
         });
@@ -285,7 +269,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        //@ TODO: 26/06/2018 change these ids and fill them with the correct activity
         if (id == R.id.nav_delete_birthday) {
             Intent intent = new Intent(getApplicationContext(), DeleteBirthdayActivity.class);
             startActivityForResult(intent, 1000);

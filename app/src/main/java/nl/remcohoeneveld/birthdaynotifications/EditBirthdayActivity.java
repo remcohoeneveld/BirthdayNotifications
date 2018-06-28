@@ -2,9 +2,7 @@ package nl.remcohoeneveld.birthdaynotifications;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Build;
-import android.os.Parcelable;
-import android.support.annotation.RequiresApi;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -36,9 +34,6 @@ import nl.remcohoeneveld.birthdaynotifications.Model.Birthday;
 public class EditBirthdayActivity extends AppCompatActivity {
     FirebaseListAdapter<Birthday> mAdapter;
 
-
-    public static boolean active = false;
-    public static EditBirthdayActivity instance = null;
     String userId;
     String bday;
 
@@ -71,28 +66,33 @@ public class EditBirthdayActivity extends AppCompatActivity {
 
             FirebaseListOptions<Birthday> options = new FirebaseListOptions.Builder<Birthday>()
                     .setQuery(query, Birthday.class)
-                    .setLayout(android.R.layout.two_line_list_item)
+                    .setLayout(R.layout.birthday_listview)
                     .build();
 
             mAdapter = new FirebaseListAdapter<Birthday>(options) {
-                @RequiresApi(api = Build.VERSION_CODES.O)
                 @Override
                 protected void populateView(View v, Birthday birthday, int position) {
                     //set the text1 value to fullname of the person
-                    ((TextView) v.findViewById(android.R.id.text1)).setText(birthday.getFull_name());
+                    ((TextView) v.findViewById(R.id.text1)).setText(birthday.getFull_name());
 
                     //convert the date of birth to the age
                     Integer age = AgeHelper.getAge(birthday.date_of_birth);
+                    String ageMessage = age + " years old";
+                    ((TextView) v.findViewById(R.id.text2)).setText(ageMessage);
 
                     // set the undertitle to the textview text2
-                    TextView underTitle = v.findViewById(android.R.id.text2);
+                    TextView underTitle = v.findViewById(R.id.text3);
                     SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy", Locale.getDefault());
+
+                    ((TextView) v.findViewById(R.id.text4)).setText(dateFormat.format(birthday.date_of_birth));
 
                     // if the date is the same as today then change the text to the birthday else just show the age
                     if (SameDateHelper.initializeSamedate(birthday.getDate_of_birth())) {
-                        bday = "Its the birthday of " + birthday.nickname + " (age " + age + ") " + dateFormat.format(birthday.date_of_birth);
+                        bday = "Today is the birthday of " + birthday.nickname;
+                        underTitle.setTextColor(getResources().getColor(R.color.colorPrimaryDark));
                     } else {
-                        bday = "(age " + age + ") " + dateFormat.format(birthday.date_of_birth);
+                        bday = birthday.nickname;
+                        underTitle.setTextColor(getResources().getColor(R.color.darkgrey));
                     }
 
                     underTitle.setText(bday);
@@ -107,10 +107,6 @@ public class EditBirthdayActivity extends AppCompatActivity {
                     // Get the selected item text from ListView
                     Object listItem = birthdayRemoveList.getItemAtPosition(position);
                     try {
-                        // get the nickname from the field (listItem)
-                        Field fieldNickname = listItem.getClass().getDeclaredField("nickname");
-                        Object nickname = fieldNickname.get(listItem);
-
                         // get the uniqueID from the field (listitem)
                         Field fieldUniqueID = listItem.getClass().getDeclaredField("uniqueID");
                         Object uniqueID = fieldUniqueID.get(listItem);
@@ -123,7 +119,7 @@ public class EditBirthdayActivity extends AppCompatActivity {
                         // if the queryChild is clicked then remove the snapshotChild
                         queryChild.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
-                            public void onDataChange(DataSnapshot dataSnapshot) {
+                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                                 for (DataSnapshot snapshotChild : dataSnapshot.getChildren()) {
                                     Birthday birthday = snapshotChild.getValue(Birthday.class);
 
@@ -137,8 +133,8 @@ public class EditBirthdayActivity extends AppCompatActivity {
                                         String date_of_birth = dateFormat.format(birthday.date_of_birth);
 
                                         intent.putExtra("full_name", birthday.full_name)
-                                                .putExtra("date_of_birth", date_of_birth)
-                                                .putExtra("nickname", birthday.nickname);
+                                                .putExtra("nickname", birthday.nickname)
+                                                .putExtra("date_of_birth", date_of_birth);
                                     }
 
                                     startActivityForResult(intent, 1000);
@@ -147,7 +143,7 @@ public class EditBirthdayActivity extends AppCompatActivity {
                             }
 
                             @Override
-                            public void onCancelled(DatabaseError databaseError) {
+                            public void onCancelled(@NonNull DatabaseError databaseError) {
                                 Log.e("TAG", "onCancelled", databaseError.toException());
                             }
                         });
@@ -170,8 +166,6 @@ public class EditBirthdayActivity extends AppCompatActivity {
         // important to check if the adapter is listening otherwise the listview will be empty
         super.onStart();
         mAdapter.startListening();
-        instance = this;
-        active = true;
     }
 
     @Override
@@ -179,23 +173,18 @@ public class EditBirthdayActivity extends AppCompatActivity {
         // important to check if the adapter has stopped listening on the stop
         super.onStop();
         mAdapter.stopListening();
-        instance = null;
-        active = false;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        instance = this;
-        active = true;
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        instance = null;
-        active = false;
     }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // showing a message when a new birthday is created succesfully and checking if the operation is not cancelled
